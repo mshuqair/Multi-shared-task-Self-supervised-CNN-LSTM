@@ -192,9 +192,9 @@ window_length = x_raw.shape[1]
 
 
 print('Number of folds: ' + str(num_folds))
-for fold in range(num_folds):
-    print('Fold number ' + str(fold + 1))
-    sub_train, sub_test = select_fold(sub_array, fold + 1, num_sub_leave_out)
+for fold in num_fold:
+    print('Fold number ' + str(fold))
+    sub_train, sub_test = select_fold(sub_array, fold, num_sub_leave_out)
     print('Training subjects: ', sub_train)
     print('Testing subjects: ', sub_test)
 
@@ -238,7 +238,7 @@ for fold in range(num_folds):
     # save the training history
     if save_history:
         model_history = history.history
-        with open('results/model_train_history_f_' + str(fold + 1) + '.pkl', 'wb') as file:
+        with open('results/model_train_history_f_' + str(fold) + '.pkl', 'wb') as file:
             pickle.dump(model_history, file)
 
     # calculate model testing metrics

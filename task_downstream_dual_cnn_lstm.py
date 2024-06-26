@@ -201,7 +201,7 @@ kernel_initializer = GlorotUniform(seed=1)
 
 # subjects for cross-testing
 sub_array = np.arange(start=1, stop=25, dtype=int)  # the patient number at stop is not included
-num_sub_leave_out = 1  # number of subjects to leave out for cross-validation
+num_sub_leave_out = 1  # number of subjects to leave out for cross-testing
 num_folds = int(sub_array.shape[0] / num_sub_leave_out)  # number of folds, always integer
 num_fold = np.arange(1, num_folds + 1)
 
@@ -241,9 +241,9 @@ x_raw = (x_raw - mean) / std
 
 
 print('Number of folds: ' + str(num_folds))
-for fold in range(num_folds):
-    print('Fold number ' + str(fold + 1))
-    sub_tune, sub_valid = select_fold(sub_array, fold + 1, num_sub_leave_out)
+for fold in num_fold:
+    print('Fold number ' + str(fold))
+    sub_tune, sub_valid = select_fold(sub_array, fold, num_sub_leave_out)
     print('Tuning / Training subjects: ', sub_tune)
     print('Testing subjects: ', sub_valid)
 
@@ -273,7 +273,7 @@ for fold in range(num_folds):
     # save the training history
     if save_history:
         model_history = history.history
-        with open('results/model_train_history_f_' + str(fold + 1) + '.pkl', 'wb') as file:
+        with open('results/model_train_history_f_' + str(fold) + '.pkl', 'wb') as file:
             pickle.dump(model_history, file)
 
     # calculate model testing metrics

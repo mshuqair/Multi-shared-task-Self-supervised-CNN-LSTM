@@ -11,8 +11,9 @@ The research associated with this code is under revision at the MDPI Bioengineer
 
 
 ## General Note
-- The code treats the estimation of UPDRS-III scores as a regression problem. If you want to use the model as a classifier, you only need to alter the model's output layer and loss function.
+- The code treats the estimation of UPDRS-III scores as a regression problem. If you want to use the model as a classifier, you need to alter the model's output layer and loss function.
 - The code performs a leave-one-out subject-wise testing. You can replace the folds with the desired training and testing data. 
+- The original data is not available due to privacy concerns.
 
 
 ## Code Requirements and Compatability

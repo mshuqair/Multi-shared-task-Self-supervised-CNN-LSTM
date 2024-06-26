@@ -30,6 +30,15 @@ The code was run and tested using the following:
 - transforms3d	0.4.1
 
 
+## Formating Your Own Data
+If you want to use your data, consider the following:
+- The shape of the input should be (n, 6), where n is the number of samples.
+- The six columns are Gyroscope Wrist X, Y, Z and Ankle X, Y, Z.
+- The labels are to be shaped as (n, 1).
+- Modify 'data_generate_raw.py', 'data_generate_spectrogram.py', 'data_pretext_generate_raw.py', and 'data_pretext_generate_spectrogram.py' to remove any dependancy on orginal data.
+
+
+
 ## Running the Model
 - Run 'data_generate_raw.py' and 'data_generate_spectrogram.py' to segment the Gyroscope Raw data and generate Spectrograms.
 - Pretext Task: run 'task_pretext_multitask_dual.py' to pre-train the Multichannel CNN using the proposed Multi-shared-task Self-supervised Learning (M-SSL) approach.

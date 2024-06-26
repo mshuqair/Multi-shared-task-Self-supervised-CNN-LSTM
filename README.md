@@ -30,5 +30,15 @@ The code was run and tested using the following:
 - transforms3d	0.4.1
 
 
-## 
+## Running the Model
+- Run 'data_generate_raw.py' and 'data_generate_spectrogram.py' to segment the Gyroscope Raw data and generate Spectrograms.
+- Pretext Task: run 'task_pretext_multitask_dual.py' to pre-train the Multichannel CNN using the proposed Multi-shared-task Self-supervised Learning (M-SSL) approach.
+- The code will generate the selected signal transformations and their spectrograms for the Pretext task.
+- The pre-trained models will be saved in the 'models' folder
+- Downstream Task: Run 'task_downstream_dual_cnn_lstm.py' to transfer the weights from the pre-trained models, fine-tune them and evaluate the testing data.
+- Baseline task: run 'task_baseline_dual_cnn_lstm.py' to get the model performance in a Supervised scenario (not using M-SSL).
+- Use any of the analysis codes to calculate metrics and visualize outputs.
+
+
+## Conclusion
 

@@ -5,4 +5,6 @@ This is the code for the proposed Multi-shared-task Self-supervised CNN-LSTM net
 
 
 ## M-SSL Multichannel CNN-LSTM for UPDRS-III Estimation in PD Patients
-![Main Algorithm](figures/figure_main.png)
+![](figures/figure_main.png)
+**Figure 1.** The main algorithm for estimating UPDRS-III scores.
+

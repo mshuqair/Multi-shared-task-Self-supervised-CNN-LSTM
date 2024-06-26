@@ -18,6 +18,8 @@ def plot_loss_curve(loss_train, epoch):
     plt.xticks(fontsize='medium')
     plt.yticks(fontsize='medium')
     plt.tight_layout()
+    if save_figure:
+        plt.savefig('./figures/pretext_network_loss.png')
     plt.show()
 
 
@@ -34,6 +36,8 @@ def plot_loss_curves(loss_train, epoch):
     plt.xticks(fontsize='medium')
     plt.yticks(fontsize='medium')
     plt.tight_layout()
+    if save_figure:
+        plt.savefig('./figures/pretext_tasks_loss.png')
     plt.show()
 
 
@@ -50,10 +54,13 @@ def plot_acc_curves(acc_train, epoch):
     plt.xticks(fontsize='medium')
     plt.yticks(fontsize='medium')
     plt.tight_layout()
+    if save_figure:
+        plt.savefig('./figures/pretext_tasks_accuracy.png')
     plt.show()
 
 
 # Main code
+save_figure = True
 with open('models/model_pretext_multitask_train_history_gyro_raw_spectro.pkl', 'rb') as file:
     model_history = pickle.load(file)
 

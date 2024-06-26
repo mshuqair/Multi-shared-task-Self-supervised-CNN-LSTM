@@ -16,16 +16,16 @@ This code is for the proposed Multi-shared-task Self-supervised CNN-LSTM network
 
 ## Code Requirements and Compatability
 The code was run and tested using the following:
-Python			3.10.11
-tensorflow		2.10.1
-keras			2.10.0
-h5py			3.10.0
-matplotlib		3.9.0
-numpy			1.26.3
-pandas			2.1.4
-scikit-learn	1.5.0
-scipy			1.13.1
-transforms3d	0.4.1
+- Python			3.10.11
+- tensorflow		2.10.1
+- keras			2.10.0
+- h5py			3.10.0
+- matplotlib		3.9.0
+- numpy			1.26.3
+- pandas			2.1.4
+- scikit-learn	1.5.0
+- scipy			1.13.1
+- transforms3d	0.4.1
 
 
 ## 

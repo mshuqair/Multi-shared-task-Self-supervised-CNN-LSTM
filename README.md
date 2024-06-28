@@ -10,7 +10,7 @@ The research associated with this code is under revision at the MDPI Bioengineer
 **Figure 1.** The main algorithm for estimating UPDRS-III scores.
 
 ![](figures/task_baseline_dual_cnn_lstm_correlation.png)	![](figures/task_downstream_dual_cnn_lstm_correlation.png)
-**Figure 2.** The correlation of the Supervised and the proposed M-SSL Multichannel CNN-LSTM.
+**Figure 2.** The correlation of the Supervised (left) and the proposed M-SSL (right) Multichannel CNN-LSTM.
 
 
 ## General Note

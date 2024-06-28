@@ -9,6 +9,9 @@ The research associated with this code is under revision at the MDPI Bioengineer
 ![](figures/figure_main.png)
 **Figure 1.** The main algorithm for estimating UPDRS-III scores.
 
+![](figures/task_baseline_dual_cnn_lstm_correlation.png)	![](figures/task_downstream_dual_cnn_lstm_correlation.png)
+**Figure 2.** The correlation of the Supervised and the proposed M-SSL Multichannel CNN-LSTM.
+
 
 ## General Note
 - The code treats the estimation of UPDRS-III scores as a regression problem. If you want to use the model as a classifier, you need to alter the model's output layer and loss function.

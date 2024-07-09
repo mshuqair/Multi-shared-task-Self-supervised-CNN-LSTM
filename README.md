@@ -1,9 +1,5 @@
 # Multi-shared-task Self-supervised (M-SSL) Multichannel CNN-LSTM
-
-- This code is for the proposed Multi-shared-task Self-supervised CNN-LSTM network to estimate UPDRS-III scores of PD patients.
-- The MDPI Bioengineering journal has recently published the research associated with this code.
-- Multi-Shared-Task Self-Supervised CNN-LSTM for Monitoring Free-Body Movement UPDRS-III Using Wearable Sensors: https://doi.org/10.3390/bioengineering11070689
-
+This code is for the proposed Multi-shared-task Self-supervised CNN-LSTM network to estimate UPDRS-III scores of PD patients.
 
 ## M-SSL Multichannel CNN-LSTM for UPDRS-III Estimation in PD Patients
 ![](figures/figure_main.png)
@@ -11,6 +7,9 @@
 
 ![](figures/task_baseline_dual_cnn_lstm_correlation.png)	![](figures/task_downstream_dual_cnn_lstm_correlation.png)
 **Figure 2.** The correlation of the Supervised (left) and the proposed M-SSL (right) Multichannel CNN-LSTM.
+
+- The MDPI Bioengineering journal has recently published the research associated with this code.
+- Multi-Shared-Task Self-Supervised CNN-LSTM for Monitoring Free-Body Movement UPDRS-III Using Wearable Sensors: https://doi.org/10.3390/bioengineering11070689
 
 
 ## General Note

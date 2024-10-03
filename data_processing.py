@@ -42,7 +42,7 @@ def segment(features, targets, window_size, num_cols, overlap_rate):
         if (len(features[start:end]) == window_size) and (i_segment != len(segments)) and (i_label != len(labels)):
             if len(np.unique(targets[start:end])) == 1:
                 segments[i_segment] = features[start:end]
-                labels[i_label] = np.unique(targets[start:end])
+                labels[i_label] = np.unique(targets[start:end])[0]
                 i_label += 1
                 i_segment += 1
 

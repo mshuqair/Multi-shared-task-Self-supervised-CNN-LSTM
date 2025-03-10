@@ -11,6 +11,7 @@
 - This code is to estimate UPDRS-III scores of PD patients.
 - The MDPI Bioengineering journal has recently published the research associated with this code.
 - Multi-Shared-Task Self-Supervised CNN-LSTM for Monitoring Free-Body Movement UPDRS-III Using Wearable Sensors: https://doi.org/10.3390/bioengineering11070689
+- Please cite the paper if you find this work useful
 
 
 ## General Note

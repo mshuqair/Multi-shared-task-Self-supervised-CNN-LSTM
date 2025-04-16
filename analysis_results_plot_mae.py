@@ -1,103 +1,112 @@
 import pickle
 import numpy as np
-import pandas as pd
-from sklearn.metrics import mean_absolute_error
 import matplotlib.pyplot as plt
-
-# Analyze the results using the saved pickle file
-save_figure = True
-
-# import data
-# The baseline model
-FileName = 'task_baseline_dual_cnn_lstm'
-with open('./results/' + FileName + '/model_predictions.pkl', 'rb') as file:
-    [y, y_predicted, pNo, roundNo] = pickle.load(file)
-y_rounds = np.array([])
-y_predicted_rounds = np.array([])
-pNo_rounds = np.array([])
-for roundI in (np.unique(roundNo)):
-    y_rounds = np.append(y_rounds, np.mean(y[roundNo == roundI]), axis=None)
-    y_predicted_temp = y_predicted[roundNo == roundI]
-    y_predicted_temp = np.rint(np.mean(y_predicted_temp).clip(min=0))
-    y_predicted_rounds = np.append(y_predicted_rounds, y_predicted_temp, axis=None)
-    pNo_rounds = np.append(pNo_rounds, np.unique(pNo[roundNo == roundI]))
-y_cnn = y_predicted_rounds
-
-UPDRS_scores = np.unique(y_rounds)
-MAE_cnn = np.zeros(shape=np.unique(y_rounds).shape[0])
-index = 0
-for score in np.unique(y_rounds):
-    y_true = y_rounds[y_rounds == score]
-    y_predicted = y_cnn[y_rounds == score]
-    MAE_cnn[index] = mean_absolute_error(y_true=y_true, y_pred=y_predicted)
-    index = index + 1
-
-# The SSL model
-FileName = 'task_downstream_dual_cnn_lstm'
-with open('./results/' + FileName + '/model_predictions.pkl', 'rb') as file:
-    [y, y_predicted, pNo, roundNo] = pickle.load(file)
-y_rounds = np.array([])
-y_predicted_rounds = np.array([])
-pNo_rounds = np.array([])
-for roundI in (np.unique(roundNo)):
-    y_rounds = np.append(y_rounds, np.mean(y[roundNo == roundI]), axis=None)
-    y_predicted_temp = y_predicted[roundNo == roundI]
-    y_predicted_temp = np.rint(np.mean(y_predicted_temp).clip(min=0))
-    y_predicted_rounds = np.append(y_predicted_rounds, y_predicted_temp, axis=None)
-    pNo_rounds = np.append(pNo_rounds, np.unique(pNo[roundNo == roundI]))
-y_ssl = y_predicted_rounds
-
-MAE_ssl = np.zeros(shape=np.unique(y_rounds).shape[0])
-index = 0
-for score in np.unique(y_rounds):
-    y_true = y_rounds[y_rounds == score]
-    y_predicted = y_ssl[y_rounds == score]
-    MAE_ssl[index] = mean_absolute_error(y_true=y_true, y_pred=y_predicted)
-    index = index + 1
+from sklearn.metrics import mean_absolute_error
 
 
-# bar plot
-mae_dict = {
-    'M-SSL': MAE_ssl,
-    'Supervised': MAE_cnn}
-width = 0.75  # the width of the bars
-multiplier = 0
-z_order = 3
-c = 0
-colors = ['tab:blue', 'tab:olive']
-fig, ax = plt.subplots(figsize=(6.5, 3))
-for attribute, measurement in mae_dict.items():
-    offset = width * multiplier
-    rects = ax.bar(UPDRS_scores + offset, measurement, width, label=attribute, color=colors[c], zorder=z_order)
-    multiplier += 0.75
-    z_order -= 1
-    c += 1
-ax.grid(which='major', axis='both', linestyle='--', linewidth=0.5, zorder=0)
-ax.legend(loc='upper left', ncols=1, fontsize='small')
-ax.set_ylim(0, 21)
-ax.set_yticks(ticks=np.arange(start=0, step=5, stop=25), labels=np.arange(start=0, step=5, stop=25))
-ax.set_ylabel('Mean absolute error', fontsize='large')
-ax.set_xlim((-1, 64))
-ax.set_xticks(ticks=np.arange(start=0, step=10, stop=70), labels=np.arange(start=0, step=10, stop=70))
-ax.set_xlabel('UPDRS-III scores', fontsize='large')
-plt.tight_layout()
-if save_figure:
-    plt.savefig('./figures/mae_bars.png')
-plt.show()
+def load_predictions(file_path):
+    """Load model predictions from a pickle file."""
+    with open(file_path, 'rb') as file:
+        return pickle.load(file)
 
 
-# box plot
-fig, ax = plt.subplots(figsize=(3.5, 3))
-box_plot = ax.boxplot([MAE_ssl, MAE_cnn], tick_labels=['M-SSL', 'Supervised'], widths=0.30,
-                      patch_artist=True, zorder=3, showfliers=False, showmeans=False, meanline=False)
-ax.grid(which='major', axis='both', linestyle='--', linewidth=0.5, zorder=0)
-ax.set_ylim((-1, 21))
-ax.set_yticks(ticks=np.arange(start=0, stop=25, step=2.5), labels=np.arange(start=0, stop=25, step=2.5))
-ax.set_ylabel('Mean absolute error', fontsize='large')
-colors = ['tab:blue', 'tab:olive']  # fill with colors
-for patch, color in zip(box_plot['boxes'], colors):
-    patch.set_facecolor(color)
-plt.tight_layout()
-if save_figure:
-    plt.savefig('./figures/mae_box.png')
-plt.show()
+def aggregate_predictions(y, y_predicted, pNo, roundNo):
+    """Aggregate predictions and labels per round."""
+    unique_rounds = np.unique(roundNo)
+    y_rounds, y_pred_rounds, pNo_rounds = [], [], []
+
+    for r in unique_rounds:
+        mask = roundNo == r
+        y_rounds.append(np.mean(y[mask]))
+        pred_mean = np.rint(np.clip(np.mean(y_predicted[mask]), a_min=0, a_max=None))
+        y_pred_rounds.append(pred_mean)
+        pNo_rounds.append(np.unique(pNo[mask])[0])
+
+    return np.array(y_rounds), np.array(y_pred_rounds), np.array(pNo_rounds)
+
+
+def compute_mae_by_score(y_true, y_pred, scores):
+    """Compute MAE for each UPDRS-III score."""
+    mae = np.zeros(len(scores))
+    for i, score in enumerate(scores):
+        mask = y_true == score
+        mae[i] = mean_absolute_error(y_true[mask], y_pred[mask])
+    return mae
+
+
+def plot_bar_mae(scores, mae_dict, save_path=None):
+    """Plot bar chart of MAEs."""
+    width = 0.75
+    colors = ['tab:blue', 'tab:olive']
+    fig, ax = plt.subplots(figsize=(6.5, 3))
+    multiplier = 0
+    z_order = 3
+    for i, (label, mae_values) in enumerate(mae_dict.items()):
+        offset = width * multiplier
+        ax.bar(scores + offset, mae_values, width=width, label=label,
+               color=colors[i], zorder=z_order)
+        multiplier += 0.75
+        z_order -= 1
+
+    ax.grid(True, linestyle='--', linewidth=0.5, zorder=0)
+    ax.set_ylim(0, 21)
+    ax.set_xlim(-1, 64)
+    ax.set_yticks(np.arange(0, 25, 5))
+    ax.set_xticks(np.arange(0, 70, 10))
+    ax.set_ylabel('Mean absolute error', fontsize='large')
+    ax.set_xlabel('UPDRS-III scores', fontsize='large')
+    ax.legend(loc='upper left', fontsize='small')
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path)
+    plt.show()
+
+
+def plot_box_mae(mae_ssl, mae_cnn, save_path=None):
+    """Plot box plot of MAEs."""
+    fig, ax = plt.subplots(figsize=(3.5, 3))
+    box = ax.boxplot([mae_ssl, mae_cnn], tick_labels=['M-SSL', 'Supervised'],
+                     widths=0.3, patch_artist=True, showfliers=False, zorder=3)
+
+    for patch, color in zip(box['boxes'], ['tab:blue', 'tab:olive']):
+        patch.set_facecolor(color)
+
+    ax.grid(True, linestyle='--', linewidth=0.5, zorder=0)
+    ax.set_ylim(-1, 21)
+    ax.set_yticks(np.arange(0, 25, 2.5))
+    ax.set_ylabel('Mean absolute error', fontsize='large')
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path)
+    plt.show()
+
+
+def main():
+    save_figure = True
+
+    # Supervised CNN-LSTM
+    y, y_pred, pNo, roundNo = load_predictions('./results/task_baseline_dual_cnn_lstm/model_predictions.pkl')
+    y_rounds_cnn, y_pred_rounds_cnn, _ = aggregate_predictions(y, y_pred, pNo, roundNo)
+    mae_cnn = compute_mae_by_score(y_rounds_cnn, y_pred_rounds_cnn, np.unique(y_rounds_cnn))
+
+    # M-SSL CNN-LSTM
+    y, y_pred, pNo, roundNo = load_predictions('./results/task_downstream_dual_cnn_lstm/model_predictions.pkl')
+    y_rounds_ssl, y_pred_rounds_ssl, _ = aggregate_predictions(y, y_pred, pNo, roundNo)
+    mae_ssl = compute_mae_by_score(y_rounds_ssl, y_pred_rounds_ssl, np.unique(y_rounds_ssl))
+
+    # Plotting
+    mae_dict = {
+        'M-SSL': mae_ssl,
+        'Supervised': mae_cnn
+    }
+    plot_bar_mae(np.unique(y_rounds_cnn), mae_dict,
+                 save_path='./figures/mae_bars.png' if save_figure else None)
+
+    plot_box_mae(mae_ssl, mae_cnn,
+                 save_path='./figures/mae_box.png' if save_figure else None)
+
+
+if __name__ == "__main__":
+    main()

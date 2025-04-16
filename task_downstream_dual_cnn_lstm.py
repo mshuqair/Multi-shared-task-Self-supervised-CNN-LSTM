@@ -16,27 +16,24 @@ import time
 # The model is 1D+2D CNN-LSTM
 
 
-def build_downstream():
-    # model parameters
+def func_model():
+    """
+    Constructs and returns the CNN-LSTM model for classifying raw gyroscope and spectrogram data.
+    """
+    # Model parameters
     optimizer = Adam(learning_rate=0.0001)
     dropout_prob_1 = 0.1
     dropout_prob_2 = 0.2
     dropout_prob_3 = 0.3
     dropout_prob_lstm_1 = 0.1
-
-    # classification layers
     dense_units = 256
-
-    # LSTM units
     lstm_units = 128
-
-    # This is for the Gyroscope data part
-    # input / output setup
-    data_shape = (window_length, numChannels)
     num_classes = 1
-
-    # conv. blocks hyperparameters
     padding_method = 'same'
+    kernel_initializer = GlorotUniform(seed=57)
+
+    # Gyroscope Raw Data Part
+    data_shape = (window_length, numChannels)
     conv1_filters = 64
     conv2_filters = 128
     conv1_kernel = 32
@@ -44,10 +41,9 @@ def build_downstream():
     pool_size = 16
     pool_strides = 4
 
-    # input layer
     layer_input_1 = Input(shape=data_shape, name='input_raw')
 
-    # convolutional block layers
+    # Conv Block 1
     layer_cnn_1_a = Conv1D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu', padding=padding_method,
                            kernel_initializer=kernel_initializer)(layer_input_1)
     layer_cnn_1_b = Conv1D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu', padding=padding_method,
@@ -55,84 +51,64 @@ def build_downstream():
     layer_dropout_1 = Dropout(dropout_prob_1)(layer_cnn_1_b)
     layer_pooling_1 = MaxPooling1D(pool_size=pool_size, strides=pool_strides)(layer_dropout_1)
 
+    # Conv Block 2
     layer_cnn_2_a = Conv1D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu', padding=padding_method,
                            kernel_initializer=kernel_initializer)(layer_pooling_1)
     layer_cnn_2_b = Conv1D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu', padding=padding_method,
                            kernel_initializer=kernel_initializer)(layer_cnn_2_a)
     layer_dropout_2 = Dropout(dropout_prob_2)(layer_cnn_2_b)
 
-    layer_lstm = (LSTM(units=lstm_units, kernel_initializer=kernel_initializer, dropout=dropout_prob_lstm_1)
-                  (layer_dropout_2))
+    layer_lstm = LSTM(units=lstm_units, kernel_initializer=kernel_initializer, dropout=dropout_prob_lstm_1)(layer_dropout_2)
     layer_final_1 = layer_lstm
 
-    # This is for spectrogram
-    # model setup
-    dropout_prob_1 = 0.1
-    dropout_prob_2 = 0.1
+    # Gyroscope Spectrogram Part
     dropout_prob_lstm_2 = 0.2
-
-    # input / output setup
     data_shape = (None, num_freq_steps, num_time_steps, numChannels)
-
-    # conv. blocks hyperparameters
     conv1_filters = 64
     conv2_filters = 128
     conv1_kernel = (5, 5)
     conv2_kernel = (3, 3)
     pool_size = (2, 2)
-    pool_strides = None
 
-    # input layer
     layer_input_2 = Input(shape=data_shape, name='input_spect')
 
-    # convolutional block layers
-    layer_cnn_1_a = (TimeDistributed(Conv2D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu',
-                                            padding=padding_method, kernel_initializer=kernel_initializer))
-                     (layer_input_2))
-    layer_cnn_1_b = (TimeDistributed(Conv2D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu',
-                                            padding=padding_method, kernel_initializer=kernel_initializer))
-                     (layer_cnn_1_a))
+    # Conv Block 1 (Spectrogram)
+    layer_cnn_1_a = TimeDistributed(Conv2D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu',
+                                            padding=padding_method, kernel_initializer=kernel_initializer))(layer_input_2)
+    layer_cnn_1_b = TimeDistributed(Conv2D(filters=conv1_filters, kernel_size=conv1_kernel, activation='relu',
+                                            padding=padding_method, kernel_initializer=kernel_initializer))(layer_cnn_1_a)
     layer_dropout_1 = TimeDistributed(Dropout(dropout_prob_1))(layer_cnn_1_b)
-    layer_pooling_1 = TimeDistributed(MaxPooling2D(pool_size=pool_size, strides=pool_strides))(layer_dropout_1)
+    layer_pooling_1 = TimeDistributed(MaxPooling2D(pool_size=pool_size))(layer_dropout_1)
 
-    layer_cnn_2_a = (TimeDistributed(Conv2D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu',
-                                            padding=padding_method, kernel_initializer=kernel_initializer))
-                     (layer_pooling_1))
-    layer_cnn_2_b = (TimeDistributed(Conv2D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu',
-                                            padding=padding_method, kernel_initializer=kernel_initializer))
-                     (layer_cnn_2_a))
+    # Conv Block 2 (Spectrogram)
+    layer_cnn_2_a = TimeDistributed(Conv2D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu',
+                                            padding=padding_method, kernel_initializer=kernel_initializer))(layer_pooling_1)
+    layer_cnn_2_b = TimeDistributed(Conv2D(filters=conv2_filters, kernel_size=conv2_kernel, activation='relu',
+                                            padding=padding_method, kernel_initializer=kernel_initializer))(layer_cnn_2_a)
     layer_dropout_2 = TimeDistributed(Dropout(dropout_prob_2))(layer_cnn_2_b)
     layer_global_pooling = TimeDistributed(GlobalMaxPooling2D())(layer_dropout_2)
 
-    layer_lstm = (LSTM(units=lstm_units, kernel_initializer=kernel_initializer, dropout=dropout_prob_lstm_2)
-                  (layer_global_pooling))
+    layer_lstm = LSTM(units=lstm_units, kernel_initializer=kernel_initializer, dropout=dropout_prob_lstm_2)(layer_global_pooling)
     layer_final_2 = layer_lstm
 
-    # features fusion layer
+    # Features Fusion
     layer_concatenate = Concatenate()([layer_final_1, layer_final_2])
 
-    # classification layers
-    layer_dense_1 = ((Dense(units=dense_units, activation='relu', kernel_initializer=kernel_initializer))
-                     (layer_concatenate))
+    # Fully connected layers
+    layer_dense_1 = Dense(units=dense_units, activation='relu', kernel_initializer=kernel_initializer)(layer_concatenate)
     layer_dropout_3 = Dropout(dropout_prob_3)(layer_dense_1)
-    layer_output = (Dense(units=num_classes, activation=None, name='output', kernel_initializer=kernel_initializer)
-                    (layer_dropout_3))
+    layer_output = Dense(units=num_classes, activation=None, name='output', kernel_initializer=kernel_initializer)(layer_dropout_3)
 
-    # inputs and outputs
-    outputs = [layer_output]
-    inputs = [layer_input_1, layer_input_2]
+    # Construct the model
+    model = Model(inputs=[layer_input_1, layer_input_2], outputs=[layer_output])
 
-    # construct the model
-    model_downstream = Model(inputs=inputs, outputs=outputs)
+    # Compile the model
+    model.compile(optimizer=optimizer, loss='huber_loss')
 
-    # compile and model summary
-    model_downstream.compile(optimizer=optimizer, loss='huber_loss')
-    # model.summary(show_trainable=True)
-
-    return model_downstream
+    return model
 
 
-def func_model(fold_no):
+def func_downstream_model(fold_no):
     # model parameters and setup
     optimizer = Adam(learning_rate=learning_rate)
 
@@ -147,7 +123,7 @@ def func_model(fold_no):
     # loading both models
     # model_pretext = build_model_pretext(num_tasks=4)     # in case we want to evaluate untrained Conv. blocks
     model_pretext = load_model('models/model_pretext_multitask_trained_gyro_raw_spectro_' + str(fold_no) + '.h5')
-    model_downstream = build_downstream()
+    model_downstream = func_model()
 
     # transfer conv. weights from pretext to downstream
     # i+1 because of the Time Distributed layer
@@ -168,18 +144,23 @@ def func_model(fold_no):
 
 
 def scheduler(epoch, lr):
-    if epoch <= (0.1*epochs):
-        lr_new = lr
+    """
+    Schedules the learning rate during training.
+    """
+    if epoch <= (0.1 * epochs):
+        return lr
     else:
-        lr_new = lr - lr_decay
-    return lr_new
+        return lr - lr_decay
 
 
 def select_fold(array, f, leave_out):
+    """
+    Selects training and testing folds for cross-validation.
+    """
     array = np.roll(array, -leave_out * (f - 1))
-    tune = array[leave_out:]
-    valid = array[0:leave_out]
-    return tune, valid
+    train = array[leave_out:]
+    test = array[:leave_out]
+    return train, test
 
 
 # Main code
@@ -259,7 +240,7 @@ for fold in num_fold:
     x_test = {'input_raw': x_test_raw, 'input_spect': np.expand_dims(x_test_spect, axis=1)}
     y_test = y_raw[np.isin(pNo, sub_valid)]
 
-    model = func_model(fold)
+    model = func_downstream_model(fold)
 
     # creating required model callbacks
     callback_scheduler = LearningRateScheduler(scheduler)

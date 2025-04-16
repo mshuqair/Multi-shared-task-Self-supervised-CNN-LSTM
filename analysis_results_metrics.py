@@ -1,65 +1,119 @@
 import pickle
 import numpy as np
-from scipy.stats import pearsonr
-from sklearn.metrics import mean_absolute_error, r2_score
+from scipy.optimize import curve_fit
+from scipy import stats
+import matplotlib.pyplot as plt
+import uncertainties.unumpy as unp
+import uncertainties as unc
+from sklearn.metrics import r2_score
 
 
-def load_predictions(file_path):
-    """Load predictions from a pickle file."""
-    with open(file_path, 'rb') as file:
-        return pickle.load(file)
+# The code is based on code from:
+# https://apmonitor.com/che263/index.php/Main/PythonRegressionStatistics
 
 
-def compute_aggregated_metrics(y, y_predicted, pNo, roundNo):
-    """Aggregate predictions and compute metrics per round."""
-    unique_rounds = np.unique(roundNo)
-    y_rounds, y_predicted_rounds, pNo_rounds = [], [], []
-
-    for round_id in unique_rounds:
-        round_mask = roundNo == round_id
-        y_rounds.append(np.mean(y[round_mask]))
-        mean_pred = np.mean(y_predicted[round_mask])
-        y_predicted_rounds.append(np.rint(np.clip(mean_pred, a_min=0, a_max=None)))
-        pNo_rounds.append(np.unique(pNo[round_mask])[0])  # assumes one patient per round
-
-    return (
-        np.array(y_rounds),
-        np.array(y_predicted_rounds),
-        np.array(pNo_rounds)
-    )
+# === Configuration ===
+font_size = 'medium'
+save_figure = True
+file_name = 'task_downstream_dual_cnn_lstm'
+results_path = f'./results/{file_name}/model_predictions.pkl'
+save_path = f'./figures/{file_name}_correlation.png'
 
 
-def print_metrics(y_true, y_pred, model_name):
-    """Print regression metrics."""
-    mae = mean_absolute_error(y_true, y_pred)
-    r2 = r2_score(y_true, y_pred)
-    corr, p_val = pearsonr(y_true, y_pred)
+# === Helper Functions ===
 
-    print(f"{model_name} Metrics:")
-    print(f"  MAE: {mae:.2f}")
-    print(f"  R² Score: {r2:.2f}")
-    print(f"  Correlation: {corr:.2f} (p = {p_val:.4f})\n")
+def linear_model(x, a, b):
+    """Linear function for regression."""
+    return a * x + b
 
 
-def main():
-    print("Regression metrics for the M-SSL CNN-LSTM:")
-    file_mssl = './results/task_downstream_dual_cnn_lstm/model_predictions.pkl'
-    y, y_predicted, pNo, roundNo = load_predictions(file_mssl)
-    y_rounds, y_pred_rounds, _ = compute_aggregated_metrics(y, y_predicted, pNo, roundNo)
-    print_metrics(y_rounds, y_pred_rounds, model_name="M-SSL CNN-LSTM")
-
-    print("Regression metrics for the Supervised CNN-LSTM:")
-    file_supervised = './results/task_baseline_dual_cnn_lstm/model_predictions.pkl'
-    _, y_predicted_sup, _, roundNo_sup = load_predictions(file_supervised)
-
-    y_pred_rounds_sup = []
-    for round_id in np.unique(roundNo_sup):
-        preds = y_predicted_sup[roundNo_sup == round_id]
-        y_pred_rounds_sup.append(np.rint(np.clip(np.mean(preds), a_min=0, a_max=None)))
-
-    y_pred_rounds_sup = np.array(y_pred_rounds_sup)
-    print_metrics(y_rounds, y_pred_rounds_sup, model_name="Supervised CNN-LSTM")
+def predband(x, xd, yd, p, func, conf=0.95):
+    """Compute prediction band for regression."""
+    alpha = 1.0 - conf
+    N = xd.size
+    var_n = len(p)
+    q = stats.t.ppf(1.0 - alpha / 2.0, N - var_n)
+    se = np.sqrt(1. / (N - var_n) * np.sum((yd - func(xd, *p)) ** 2))
+    sx = (x - xd.mean()) ** 2
+    sxd = np.sum((xd - xd.mean()) ** 2)
+    yp = func(x, *p)
+    dy = q * se * np.sqrt(1.0 + (1.0 / N) + (sx / sxd))
+    lpb, upb = yp - dy, yp + dy
+    return lpb, upb
 
 
-if __name__ == "__main__":
-    main()
+# === Load Data ===
+
+with open(results_path, 'rb') as file:
+    y, y_predicted, pNo, roundNo = pickle.load(file)
+
+# === Preprocess Round-Wise Predictions ===
+
+y_rounds, y_predicted_rounds, pNo_rounds = [], [], []
+
+for r in np.unique(roundNo):
+    y_rounds.append(np.mean(y[roundNo == r]))
+    pred = y_predicted[roundNo == r]
+    y_predicted_rounds.append(np.rint(np.mean(pred).clip(min=0)))
+    pNo_rounds.append(np.unique(pNo[roundNo == r])[0])
+
+x = np.array(y_rounds)
+y = np.array(y_predicted_rounds)
+
+# === Curve Fitting ===
+
+popt, pcov = curve_fit(linear_model, x, y)
+a, b = popt
+print('Optimal Values')
+print(f'a: {a:.4f}')
+print(f'b: {b:.4f}')
+
+# === Regression Statistics ===
+
+r2 = r2_score(x, y)
+print(f'R²: {r2:.4f}')
+
+# Confidence intervals
+a_unc, b_unc = unc.correlated_values(popt, pcov)
+print('Uncertainty')
+print(f'a: {a_unc}')
+print(f'b: {b_unc}')
+
+# === Plotting ===
+
+plt.figure(figsize=(4, 4))
+plt.scatter(x, y, s=20, c='tab:blue')
+
+# Fit line and confidence bands
+px = np.linspace(0, np.max(x), 100)
+py = a_unc * px + b_unc
+nom = unp.nominal_values(py)
+std = unp.std_devs(py)
+
+lpb, upb = predband(px, x, y, popt, linear_model, conf=0.95)
+
+# Plot regression line
+plt.plot(px, nom, c='black', label='y = a·x + b')
+
+# 95% confidence interval
+plt.plot(px, nom - 1.96 * std, c='tab:red', label='95% Confidence Region')
+plt.plot(px, nom + 1.96 * std, c='tab:red')
+
+# 95% prediction band
+plt.plot(px, lpb, 'k--', label='95% Prediction Band')
+plt.plot(px, upb, 'k--')
+
+# Formatting
+plt.xlim(-1, 61)
+plt.ylim(-1, 61)
+plt.xlabel('Clinical UPDRS-III', fontsize='large')
+plt.ylabel('Estimated UPDRS-III', fontsize='large')
+plt.xticks(fontsize=font_size)
+plt.yticks(fontsize=font_size)
+plt.legend(loc='upper left', fontsize='small')
+plt.tight_layout()
+
+if save_figure:
+    plt.savefig(save_path)
+
+plt.show()
